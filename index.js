@@ -1,4 +1,4 @@
-const got = require('got');
+const axios = require('axios');
 
 const host = 'https://time.geekbang.org/serv/v1';
 const links = {
@@ -11,30 +11,34 @@ const links = {
   comments: `${host}/comments`,
   audios: `${host}/column/audios`,
 };
-const CN_CODE = '86';
 
 async function request(link, body = {}, cookie = '') {
   const headers = {
     Referer: 'https://servicewechat.com/wxc4f8a61ef62e6e35/20/page-frame.html',
     Cookie: cookie,
+    "Content-Type": "application/json"
   };
 
   try {
-    const isLoginLink = link === links.login;
-    const res = await got(link, {
-      json: true, headers, body, method: 'post',
+    const res = await axios({
+      url: link,
+      method: 'POST',
+      headers,
+      data: body,
+      transformRequest: [(data) => {
+        return JSON.stringify(data);
+      }],
+      // proxy: {
+      //   host: '127.0.0.1',
+      //   port: 8888,
+      // },
     });
-    const loginCookie = isLoginLink
-      ? res.headers['set-cookie'].map(v => v.split(';')[0]).join('; ')
-      : '';
 
-    if (res.body.code === 0) {
-      return isLoginLink
-        ? { ...res.body.data, cookie: loginCookie }
-        : res.body.data;
+    if (res.status === 200) {
+      return res.data.data;
     }
 
-    throw new Error(`Wrong Code: ${res.body.code}`);
+    throw new Error(`Wrong Code: ${res.status}`);
   } catch (err) {
     throw err;
   }
@@ -42,26 +46,7 @@ async function request(link, body = {}, cookie = '') {
 
 class Geektime {
   constructor(country, cellphone, password) {
-    let countryCode = country;
-    let phone = cellphone;
-    let pass = password;
-
-    if (password === undefined) {
-      [countryCode, phone, pass] = [CN_CODE, country, cellphone];
-    }
-
-    if (typeof phone !== 'string' || typeof pass !== 'string') {
-      throw new TypeError('cellphone/password should be string');
-    }
-
-    if (phone === '' || pass === '') {
-      throw new Error('cellphone/password should not be empty');
-    }
-
-    this.country = +countryCode;
-    this.cellphone = phone;
-    this.password = pass;
-    this.cookie = null;
+    this.cookie = 'xxx';
   }
 
   // 产品列表，返回 专栏/视频课/微课/其他
@@ -74,7 +59,7 @@ class Geektime {
     const parts = res.filter(v => v.page.more);
     const fulls = await Promise.all(
       parts.map(v => request(
-        links.productList, { nav_id: v.id, prev: 0, size: 1000 }, cookie,
+        links.productList, { nav_id: v.id, prev: 0, size: 100 }, cookie,
       )),
     );
     fulls.forEach((v, index) => {
@@ -124,21 +109,7 @@ class Geektime {
       return this.cookie;
     }
 
-    const { cellphone, password, country } = this;
-    const body = {
-      cellphone,
-      password,
-      country,
-      remember: 1,
-      captcha: '',
-      platform: 4,
-      appid: 1,
-    };
-
-    const { cookie } = await request(links.login, body);
-    this.cookie = cookie;
-
-    return this.cookie;
+    throw new Error('Please set cookie first');
   }
 }
 

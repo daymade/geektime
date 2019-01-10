@@ -9,6 +9,32 @@ npm install geektime
 yarn add geektime
 ```
 
+geektime-cli 现在导出不了, 好像是登录挂了.
+
+我们直接贴 cookie 绕过之后即可正常使用.
+
+安装步骤如下:
+
+```bash
+mkdir temp && cd temp
+
+git clone git@github.com:daymade/geektime.git
+cd geektime && npm install
+
+# !important: paste your cookie at line 49 of index.js
+
+cd ..
+
+git clone git@github.com:daymade/geektime-cli.git
+cd geektime-cli && npm install
+
+npm link ../geektime
+
+# enjoy
+node ./bin/geektime.js products
+node ./bin/geektime.js e 116
+```
+
 ## EXAMPLE
 ```js
 const Geektime = require('geektime');
